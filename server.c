@@ -1,70 +1,50 @@
-#include <signal.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <sys/time.h>
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   server.c                                           :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: asmolnya <asmolnya@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2024/06/12 19:58:40 by asmolnya          #+#    #+#             */
+/*   Updated: 2024/06/12 20:59:11 by asmolnya         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
 
-struct timeval start, end;
-static int first_signal = 1;
+#include "minitalk.h"
 
-
-void handle_signal(int sig, siginfo_t *info, void *context)
+void	handle_signal(int sig)
 {
-    static char c = 0;
-    static int bit_count = 0;
-    
-    
+	static char	c = 0;
+	static int	bit_count = 0;
 
-    if (first_signal) {
-        gettimeofday(&start, NULL);
-        first_signal = 0;
-    }
-
-    if (sig == SIGUSR1)
-    {
-        // printf("HERE\n");
-        c |= (1 << bit_count);
-    }
-        
-    bit_count++;
-    
-    
-    if (bit_count == 8) {
-        // printf("THERE\n");
-        write(1, &c, 1);
-        if (c == '\0') {
-            gettimeofday(&end, NULL);
-            long seconds = end.tv_sec - start.tv_sec;
-            long microseconds = end.tv_usec - start.tv_usec;
-            double elapsed = seconds + microseconds*1e-6;
-
-            printf("\nMessage received in %.6f seconds\n", elapsed);
-
-            // Reset the start time for the next message
-            first_signal = 1;
-        }
-        bit_count = 0;
-        c = 0;
-    }
-    // Optionally, send acknowledgment to client
-    // kill(info->si_pid, SIGUSR1);
+	if (sig == SIGUSR1)
+	{
+		c |= (1 << bit_count);
+	}
+	bit_count++;
+	if (bit_count == 8)
+	{
+		write(1, &c, 1);
+		if (c == '\0')
+			write(1, "\n", 1);
+		bit_count = 0;
+		c = 0;
+	}
 }
 
-int main(void)
+int	main(void)
 {
-    struct sigaction sa;
-    sa.sa_flags = SA_SIGINFO;
-    sa.sa_sigaction = handle_signal;
-    sigemptyset(&sa.sa_mask);
-    sigaction(SIGUSR1, &sa, NULL);
-    sigaction(SIGUSR2, &sa, NULL);
+	struct sigaction	sa;
 
-    printf("Server PID: %d\n", getpid());
-
-    // Keep the server running to handle incoming signals
-    while (1) {
-        pause();
-    }
-
-    return 0;
+	sa.sa_flags = 0;
+	sa.sa_handler = handle_signal;
+	sigemptyset(&sa.sa_mask);
+	sigaction(SIGUSR1, &sa, NULL);
+	sigaction(SIGUSR2, &sa, NULL);
+	ft_printf("Server PID: %d\n", getpid());
+	while (1)
+	{
+		pause();
+	}
+	return (0);
 }
